@@ -1,0 +1,180 @@
+
+● <!DOCTYPE html>
+  <html lang="pl">
+  <head>
+    <meta charset="UTF-8">
+    <title>World Clock</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #0f0f1a;
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 48px;
+      }
+      h1 { font-size: 14px; letter-spacing: 4px; color: #666; text-transform: uppercase; }
+
+      .clock-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      .clock {
+        width: 200px; height: 200px;
+        border-radius: 50%;
+        border: 3px solid #333;
+        background: #1a1a2e;
+        position: relative;
+        cursor: pointer;
+        transition: border-color 0.3s;
+      }
+      .clock:hover { border-color: #4f8ef7; }
+      .hand {
+        position: absolute;
+        bottom: 50%; left: 50%;
+        transform-origin: bottom center;
+        border-radius: 4px;
+      }
+      .hour   { width: 4px; height: 55px; background: white;  margin-left: -2px; }
+      .minute { width: 2px; height: 75px; background: #4f8ef7; margin-left: -1px; }
+      .second { width: 1px; height: 80px; background: #f74f4f; margin-left: -0.5px; }
+      .dot {
+        width: 10px; height: 10px; background: white;
+        border-radius: 50%; position: absolute;
+        top: 50%; left: 50%; transform: translate(-50%, -50%);
+      }
+      .city-name {
+        font-size: 28px; font-weight: 700; letter-spacing: -1px;
+      }
+      .digital {
+        font-size: 18px; color: #4f8ef7;
+        font-variant-numeric: tabular-nums;
+      }
+      .btn {
+        padding: 10px 28px; border-radius: 24px;
+        border: 1px solid #333; background: transparent;
+        color: #aaa; cursor: pointer; font-size: 13px;
+        transition: all 0.2s;
+      }
+      .btn:hover { border-color: #4f8ef7; color: white; }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        width: 640px;
+      }
+      .tile {
+        background: #1a1a2e;
+        border: 1px solid #222;
+        border-radius: 12px;
+        padding: 14px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .tile:hover, .tile.active { border-color: #4f8ef7; }
+      .tile-city { font-size: 12px; color: #666; margin-bottom: 4px; }
+      .tile-time { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    </style>
+  </head>
+  <body>
+  
+  <h1>World Clock</h1>
+
+  <div class="clock-wrap">
+    <div class="clock" onclick="nextCity()">
+      <div class="hand hour"   id="h"></div>
+      <div class="hand minute" id="m"></div>
+      <div class="hand second" id="s"></div>
+      <div class="dot"></div>   
+    </div>
+    <div class="city-name" id="cityName">Warszawa</div>
+    <div class="digital"   id="digitalTime">00:00:00</div>
+    <button class="btn" onclick="nextCity()">Następne miasto →</button>
+  </div>
+  
+  <div class="grid" id="grid"></div>
+  
+  <script>
+    const cities = [
+      { name: 'Warszawa',    tz: 'Europe/Warsaw'     },
+      { name: 'Londyn',      tz: 'Europe/London'     },
+      { name: 'Nowy Jork',   tz: 'America/New_York'  },
+      { name: 'Los Angeles', tz: 'America/Los_Angeles'},
+      { name: 'Moskwa',      tz: 'Europe/Moscow'     },
+      { name: 'Tokio',       tz: 'Asia/Tokyo'        },
+      { name: 'Pekin',       tz: 'Asia/Shanghai'     },
+      { name: 'Sydney',      tz: 'Australia/Sydney'  },
+    ];
+
+    let current = 0;  
+
+    function getTime(tz) {
+      const now = new Date();
+      const str = now.toLocaleTimeString('pl-PL', { timeZone: tz, hour12: false });
+      const [h, m, s] = str.split(':').map(Number);
+      return { h, m, s };
+    }
+
+    function rotate(el, deg) {
+      el.style.transform = `translateX(-50%) rotate(${deg}deg)`;
+    }
+  
+    function updateClock() {
+      const { h, m, s } = getTime(cities[current].tz);
+      rotate(document.getElementById('h'), (h % 12) * 30 + m * 0.5);
+      rotate(document.getElementById('m'), m * 6 + s * 0.1);
+      rotate(document.getElementById('s'), s * 6);
+
+      const pad = n => String(n).padStart(2, '0');
+      document.getElementById('digitalTime').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function nextCity() {
+      current = (current + 1) % cities.length;
+      document.getElementById('cityName').textContent = cities[current].name;
+      document.querySelectorAll('.tile').forEach((t, i) =>
+        t.classList.toggle('active', i === current));
+      updateClock();
+    }
+
+    function buildGrid() {
+      const grid = document.getElementById('grid');
+      cities.forEach((city, i) => {
+        const div = document.createElement('div');
+        div.className = 'tile' + (i === 0 ? ' active' : '');
+        div.innerHTML = `<div class="tile-city">${city.name}</div>
+                         <div class="tile-time" id="tile-${i}">--:--</div>`;
+        div.onclick = () => {
+          current = i;
+          document.getElementById('cityName').textContent = city.name;
+          document.querySelectorAll('.tile').forEach((t, j) =>
+            t.classList.toggle('active', j === i));
+          updateClock(); 
+        };
+        grid.appendChild(div);
+      });
+    }
+  
+    function updateTiles() {
+      cities.forEach((city, i) => {
+        const { h, m } = getTime(city.tz);
+        const pad = n => String(n).padStart(2, '0');
+        const el = document.getElementById('tile-' + i);
+        if (el) el.textContent = `${pad(h)}:${pad(m)}`;
+      });
+    }
+  
+    buildGrid();
+    updateClock();
+    updateTiles();
+    setInterval(() => { updateClock(); updateTiles(); }, 1000);
+  </script>
+  </body>   
+  </html>
