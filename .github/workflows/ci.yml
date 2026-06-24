@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [feature/ci-workflow]
+    branches: [main]
 
 jobs:
   test:
