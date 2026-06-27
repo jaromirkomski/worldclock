@@ -13,14 +13,22 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
+locals {
+  tags = {
+    Project = "worldclock"
+  }
+}
+
 # ECR
 resource "aws_ecr_repository" "worldclock" {
   name = "worldclock"
+  tags = local.tags
 }
 
 # ECS Cluster
 resource "aws_ecs_cluster" "worldclock" {
   name = "worldclock"
+  tags = local.tags
 }
 
 # IAM Role dla ECS
@@ -34,6 +42,7 @@ resource "aws_iam_role" "ecs_task_execution" {
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })
+  tags = local.tags
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
@@ -45,6 +54,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
 resource "aws_vpc" "worldclock" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
+  tags                 = local.tags
 }
 
 # Subnet 1 (us-east-1a)
@@ -53,6 +63,7 @@ resource "aws_subnet" "worldclock_a" {
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
+  tags                    = local.tags
 }
 
 # Subnet 2 (us-east-1b) - wymagany przez ALB
@@ -61,10 +72,12 @@ resource "aws_subnet" "worldclock_b" {
   cidr_block              = "10.0.2.0/24"
   availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
+  tags                    = local.tags
 }
 
 resource "aws_internet_gateway" "worldclock" {
   vpc_id = aws_vpc.worldclock.id
+  tags   = local.tags
 }
 
 resource "aws_route_table" "worldclock" {
@@ -73,6 +86,7 @@ resource "aws_route_table" "worldclock" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.worldclock.id
   }
+  tags = local.tags
 }
 
 resource "aws_route_table_association" "worldclock_a" {
@@ -102,6 +116,8 @@ resource "aws_security_group" "alb" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = local.tags
 }
 
 # Security Group dla ECS - tylko ruch z ALB
@@ -121,6 +137,8 @@ resource "aws_security_group" "ecs" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = local.tags
 }
 
 # ALB
@@ -130,6 +148,7 @@ resource "aws_lb" "worldclock" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
   subnets            = [aws_subnet.worldclock_a.id, aws_subnet.worldclock_b.id]
+  tags               = local.tags
 }
 
 # Target Group
@@ -146,6 +165,8 @@ resource "aws_lb_target_group" "worldclock" {
     unhealthy_threshold = 3
     interval            = 30
   }
+
+  tags = local.tags
 }
 
 # ALB Listener
@@ -158,6 +179,8 @@ resource "aws_lb_listener" "worldclock" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.worldclock.arn
   }
+
+  tags = local.tags
 }
 
 # ECS Task Definition
@@ -185,11 +208,14 @@ resource "aws_ecs_task_definition" "worldclock" {
       }
     }
   }])
+
+  tags = local.tags
 }
 
 # CloudWatch Logs
 resource "aws_cloudwatch_log_group" "worldclock" {
   name = "/ecs/worldclock"
+  tags = local.tags
 }
 
 # ECS Service
@@ -213,6 +239,8 @@ resource "aws_ecs_service" "worldclock" {
   }
 
   depends_on = [aws_lb_listener.worldclock]
+
+  tags = local.tags
 }
 
 output "alb_dns_name" {
