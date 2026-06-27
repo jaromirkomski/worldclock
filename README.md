@@ -1,18 +1,20 @@
 # World Clock
 
-Aplikacja webowa wyświetlająca aktualny czas w 8 miastach na świecie. Zawiera analogowy zegar z wskazówkami oraz siatkę miast z czasem cyfrowym. Użytkownik może przełączać między miastami klikając kafelki lub przycisk "Następne miasto".
+Aplikacja webowa REST API zwracająca aktualny czas w 8 miastach na świecie.
 
 ## Architektura
 
 ```
-GitHub → GitHub Actions → Amazon ECR → Amazon ECS (Fargate) → Public URL
+GitHub → GitHub Actions → Amazon ECR → Amazon ECS (Fargate) → ALB → Cloudflare DNS → Public URL
 ```
 
 - **GitHub** — repozytorium kodu
 - **GitHub Actions** — pipeline CI/CD (testy, build, deploy)
 - **Amazon ECR** — rejestr obrazów Docker
-- **Amazon ECS Fargate** — uruchomienie kontenera
-- **Terraform** — infrastruktura jako kod (VPC, ECS, ECR, IAM, CloudWatch)
+- **Amazon ECS Fargate** — uruchomienie kontenera bez zarządzania serwerami
+- **ALB** — Application Load Balancer, health check, stabilny DNS
+- **Cloudflare DNS** — własna domena
+- **Terraform** — infrastruktura jako kod (VPC, subnety, ALB, ECS, ECR, IAM, CloudWatch)
 
 ## Endpointy
 
@@ -61,4 +63,4 @@ Pipeline uruchamia się automatycznie przy każdym pushu do `main`:
 
 ## Link do aplikacji
 
-http://13.222.138.5:3000
+http://worldclock.fantastycznydompanajaromira.uk
