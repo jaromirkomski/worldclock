@@ -25,6 +25,10 @@ locals {
   }
 }
 
+variable "twilio_account_sid" { sensitive = true }
+variable "twilio_auth_token"  { sensitive = true }
+variable "anthropic_api_key"  { sensitive = true }
+
 # ECR
 resource "aws_ecr_repository" "worldclock" {
   name = "worldclock"
@@ -213,6 +217,12 @@ resource "aws_ecs_task_definition" "worldclock" {
         awslogs-stream-prefix = "ecs"
       }
     }
+    environment = [
+      { name = "TWILIO_ACCOUNT_SID", value = var.twilio_account_sid },
+      { name = "TWILIO_AUTH_TOKEN",  value = var.twilio_auth_token  },
+      { name = "ANTHROPIC_API_KEY",  value = var.anthropic_api_key  },
+      { name = "TWILIO_PHONE",       value = "whatsapp:+14155238886" }
+    ]
   }])
 
   tags = local.tags
