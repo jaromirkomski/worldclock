@@ -13,6 +13,8 @@ jobs:
       TF_VAR_twilio_account_sid: ${{ secrets.TWILIO_ACCOUNT_SID }}
       TF_VAR_twilio_auth_token: ${{ secrets.TWILIO_AUTH_TOKEN }}
       TF_VAR_anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      TF_VAR_vapi_api_key: ${{ secrets.VAPI_API_KEY }}
+      TF_VAR_vapi_phone_number_id: ${{ secrets.VAPI_PHONE_NUMBER_ID }}
     steps:
       - uses: actions/checkout@v4
 
