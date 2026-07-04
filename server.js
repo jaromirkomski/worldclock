@@ -86,6 +86,33 @@ app.post('/api/whatsapp/initiate', async (req, res) => {
   }
 });
 
+app.post('/api/call', async (req, res) => {
+  const { phone } = req.body;
+  const customerNumber = `+${phone.replace(/\D/g, '')}`;
+  try {
+    const response = await fetch('https://api.vapi.ai/call/phone', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        assistantId: '34bd5128-4664-440f-b974-81411b9f46f6',
+        phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+        customer: { number: customerNumber }
+      })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      res.json({ ok: true });
+    } else {
+      res.status(500).json({ error: data.message || 'Błąd połączenia' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/webhook/whatsapp', async (req, res) => {
   const reply = await askAgent(req.body.Body);
   const twiml = new twilio.twiml.MessagingResponse();
