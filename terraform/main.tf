@@ -29,7 +29,7 @@ variable "twilio_account_sid"   { sensitive = true }
 variable "twilio_auth_token"    { sensitive = true }
 variable "anthropic_api_key"    { sensitive = true }
 variable "vapi_api_key"         { sensitive = true }
-variable "vapi_phone_number_id" { sensitive = true }
+variable "vapi_phone_number_id" { sensitive = true } # Twilio PL number
 
 # ECR
 resource "aws_ecr_repository" "worldclock" {
