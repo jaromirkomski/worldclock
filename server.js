@@ -89,6 +89,71 @@ app.post('/api/whatsapp/initiate', async (req, res) => {
   }
 });
 
+function timeToMinutes(time) {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+async function getBooksySlots(date) {
+  const response = await fetch(
+    `https://pl.booksy.com/core/v2/business_api/me/businesses/${process.env.BOOKSY_BUSINESS_ID}/calendar?start_date=${date}&end_date=${date}&include_unconfirmed=true&version=3&resources_per_page=4`,
+    {
+      headers: {
+        'X-Api-Key': process.env.BOOKSY_API_KEY,
+        'X-Access-Token': process.env.BOOKSY_ACCESS_TOKEN,
+        'Accept-Language': 'pl',
+        'Origin': 'https://booksy.com',
+        'X-App-Version': '3.0',
+      }
+    }
+  );
+  if (!response.ok) return null;
+  const data = await response.json();
+  const slots = [];
+  for (const resource of data.resources || []) {
+    const hours = resource.working_hours?.[date] || [];
+    const bookings = Object.values(resource.bookings || {});
+    for (const { hour_from, hour_till } of hours) {
+      const startMin = timeToMinutes(hour_from);
+      const endMin = timeToMinutes(hour_till);
+      for (let t = startMin; t <= endMin - 30; t += 30) {
+        const isBooked = bookings.some(b => {
+          const bStart = timeToMinutes(b.start_time || b.hour_from);
+          const bEnd = timeToMinutes(b.end_time || b.hour_till);
+          return t < bEnd && (t + 30) > bStart;
+        });
+        if (!isBooked) slots.push(`${minutesToTime(t)} (${resource.name.trim()})`);
+      }
+    }
+  }
+  return slots;
+}
+
+app.post('/api/vapi/webhook', async (req, res) => {
+  const { message } = req.body;
+  if (message?.type !== 'tool-calls') return res.json({});
+  const results = [];
+  for (const toolCall of message.toolCallList || []) {
+    const args = JSON.parse(toolCall.function.arguments || '{}');
+    let result = 'Nieznane narzędzie';
+    if (toolCall.function.name === 'get_availability') {
+      const date = args.date || new Date().toISOString().split('T')[0];
+      const slots = await getBooksySlots(date);
+      if (!slots) result = 'Nie mogę teraz sprawdzić terminów, przepraszam.';
+      else if (slots.length === 0) result = `Brak wolnych terminów na ${date}.`;
+      else result = `Wolne terminy na ${date}: ${slots.slice(0, 8).join(', ')}.`;
+    }
+    results.push({ toolCallId: toolCall.id, result });
+  }
+  res.json({ results });
+});
+
 app.post('/api/call', async (req, res) => {
   const { phone } = req.body;
   const customerNumber = `+${phone.replace(/\D/g, '')}`;

@@ -16,6 +16,9 @@ jobs:
       TF_VAR_vapi_api_key: ${{ secrets.VAPI_API_KEY }}
       TF_VAR_vapi_phone_number_id: ${{ secrets.VAPI_PHONE_NUMBER_ID }}
       TF_VAR_vapi_public_key: ${{ secrets.VAPI_PUBLIC_KEY }}
+      TF_VAR_booksy_business_id: ${{ secrets.BOOKSY_BUSINESS_ID }}
+      TF_VAR_booksy_api_key: ${{ secrets.BOOKSY_API_KEY }}
+      TF_VAR_booksy_access_token: ${{ secrets.BOOKSY_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 

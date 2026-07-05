@@ -31,6 +31,9 @@ variable "anthropic_api_key"    { sensitive = true }
 variable "vapi_api_key"         { sensitive = true }
 variable "vapi_phone_number_id" { sensitive = true }
 variable "vapi_public_key"      { sensitive = true }
+variable "booksy_business_id"   { sensitive = true }
+variable "booksy_api_key"       { sensitive = true }
+variable "booksy_access_token"  { sensitive = true }
 
 # ECR
 resource "aws_ecr_repository" "worldclock" {
@@ -227,7 +230,10 @@ resource "aws_ecs_task_definition" "worldclock" {
       { name = "TWILIO_PHONE",         value = "whatsapp:+14155238886"      },
       { name = "VAPI_API_KEY",         value = var.vapi_api_key          },
       { name = "VAPI_PHONE_NUMBER_ID", value = var.vapi_phone_number_id  },
-      { name = "VAPI_PUBLIC_KEY",      value = var.vapi_public_key       }
+      { name = "VAPI_PUBLIC_KEY",      value = var.vapi_public_key       },
+      { name = "BOOKSY_BUSINESS_ID",  value = var.booksy_business_id   },
+      { name = "BOOKSY_API_KEY",      value = var.booksy_api_key       },
+      { name = "BOOKSY_ACCESS_TOKEN", value = var.booksy_access_token  }
     ]
   }])
 
