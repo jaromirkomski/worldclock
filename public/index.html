@@ -256,12 +256,13 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/vapi.js"></script>
-  <script>
+  <script type="module">
+  import Vapi from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web/+esm';
+
   let vapiInstance = null;
   let inCall = false;
 
-  async function toggleCall() {
+  window.toggleCall = async function() {
     if (inCall) { vapiInstance.stop(); return; }
     const btn = document.getElementById('callActionBtn');
     const status = document.getElementById('callStatus');
@@ -293,12 +294,12 @@
       status.textContent = '❌ ' + e.message;
       btn.disabled = false;
     }
-  }
+  };
 
-  function stopCallAndClose() {
+  window.stopCallAndClose = function() {
     if (vapiInstance && inCall) vapiInstance.stop();
     document.getElementById('callBg').classList.remove('open');
-  }
+  };
   </script>
 
   <script>
