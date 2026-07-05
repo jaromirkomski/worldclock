@@ -20,6 +20,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.get('/health',  (req, res) => res.json({ status: 'ok' }));
+app.get('/api/config', (req, res) => {
+  res.json({ vapiPublicKey: process.env.VAPI_PUBLIC_KEY });
+});
 app.get('/version', (req, res) => res.json({ version: '1.0.0' }));
 app.get('/api/time', (req, res) => {
   const { city } = req.query;

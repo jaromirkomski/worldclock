@@ -235,9 +235,9 @@
   <div class="call-modal-bg" id="callBg">
     <div class="modal">
       <h2>Umów wizytę głosowo 📞</h2>
-      <p>Zadzwoń na numer poniżej — agent odbierze i umówi wizytę po polsku.</p>
-      <a href="tel:+12182979664" style="display:block; text-align:center; font-size:22px; font-weight:700; color:#4f8ef7; padding:16px; background:#0f0f1a; border-radius:8px; text-decoration:none; letter-spacing:1px;">+1 (218) 297 9664</a>
-      <button class="modal-cancel" onclick="document.getElementById('callBg').classList.remove('open')">Zamknij</button>
+      <p id="callStatus">Kliknij aby porozmawiać z agentem przez przeglądarkę.</p>
+      <button class="modal-send" style="background:#4f8ef7" id="callActionBtn" onclick="toggleCall()">Rozpocznij rozmowę ➤</button>
+      <button class="modal-cancel" onclick="stopCallAndClose()">Zamknij</button>
     </div>
   </div>
 
@@ -255,6 +255,51 @@
       <button class="modal-cancel" onclick="document.getElementById('waBg').classList.remove('open')">Anuluj</button>
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/vapi.js"></script>
+  <script>
+  let vapiInstance = null;
+  let inCall = false;
+
+  async function toggleCall() {
+    if (inCall) { vapiInstance.stop(); return; }
+    const btn = document.getElementById('callActionBtn');
+    const status = document.getElementById('callStatus');
+    btn.disabled = true;
+    status.textContent = 'Łączę...';
+    try {
+      const { vapiPublicKey } = await (await fetch('/api/config')).json();
+      vapiInstance = new Vapi(vapiPublicKey);
+      vapiInstance.on('call-start', () => {
+        inCall = true;
+        btn.disabled = false;
+        btn.textContent = 'Zakończ rozmowę ✕';
+        btn.style.background = '#f74f4f';
+        status.textContent = 'Połączono — mów do mikrofonu.';
+      });
+      vapiInstance.on('call-end', () => {
+        inCall = false;
+        btn.disabled = false;
+        btn.textContent = 'Rozpocznij rozmowę ➤';
+        btn.style.background = '#4f8ef7';
+        status.textContent = 'Rozmowa zakończona.';
+      });
+      vapiInstance.on('error', (e) => {
+        status.textContent = '❌ ' + (e.message || 'Błąd połączenia');
+        btn.disabled = false;
+      });
+      vapiInstance.start('34bd5128-4664-440f-b974-81411b9f46f6');
+    } catch(e) {
+      status.textContent = '❌ ' + e.message;
+      btn.disabled = false;
+    }
+  }
+
+  function stopCallAndClose() {
+    if (vapiInstance && inCall) vapiInstance.stop();
+    document.getElementById('callBg').classList.remove('open');
+  }
+  </script>
 
   <script>
   async function initiateCall() {
