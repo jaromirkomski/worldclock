@@ -29,7 +29,8 @@ variable "twilio_account_sid"   { sensitive = true }
 variable "twilio_auth_token"    { sensitive = true }
 variable "anthropic_api_key"    { sensitive = true }
 variable "vapi_api_key"         { sensitive = true }
-variable "vapi_phone_number_id" { sensitive = true } # Twilio PL number
+variable "vapi_phone_number_id" { sensitive = true }
+variable "vapi_public_key"      { sensitive = true }
 
 # ECR
 resource "aws_ecr_repository" "worldclock" {
@@ -225,7 +226,8 @@ resource "aws_ecs_task_definition" "worldclock" {
       { name = "ANTHROPIC_API_KEY",  value = var.anthropic_api_key  },
       { name = "TWILIO_PHONE",         value = "whatsapp:+14155238886"      },
       { name = "VAPI_API_KEY",         value = var.vapi_api_key          },
-      { name = "VAPI_PHONE_NUMBER_ID", value = var.vapi_phone_number_id  }
+      { name = "VAPI_PHONE_NUMBER_ID", value = var.vapi_phone_number_id  },
+      { name = "VAPI_PUBLIC_KEY",      value = var.vapi_public_key       }
     ]
   }])
 
