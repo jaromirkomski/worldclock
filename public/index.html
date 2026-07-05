@@ -257,7 +257,8 @@
   </div>
 
   <script type="module">
-  import Vapi from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web/+esm';
+  import VapiLib from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web/+esm';
+  const Vapi = VapiLib.default || VapiLib;
 
   let vapiInstance = null;
   let inCall = false;
