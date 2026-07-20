@@ -209,6 +209,30 @@ resource "aws_lb_listener" "worldclock" {
   tags = local.tags
 }
 
+# --- ETAP 1: certyfikat ACM dla ALB (bez Cloudflare jako pośrednika TLS) ---
+# Tylko żądanie certyfikatu i walidacja DNS — nic tu nie czeka i nie blokuje
+# pipeline'u. Listener 443 dojdzie w Etapie 2, po ręcznym dodaniu rekordu
+# walidacyjnego w Cloudflare (patrz output acm_validation_record poniżej).
+resource "aws_acm_certificate" "worldclock" {
+  domain_name       = "worldclock.fantastycznydompanajaromira.uk"
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = local.tags
+}
+
+output "acm_validation_record" {
+  description = "Dodaj ten rekord CNAME w Cloudflare, żeby zwalidować certyfikat ACM"
+  value = {
+    name  = tolist(aws_acm_certificate.worldclock.domain_validation_options)[0].resource_record_name
+    type  = tolist(aws_acm_certificate.worldclock.domain_validation_options)[0].resource_record_type
+    value = tolist(aws_acm_certificate.worldclock.domain_validation_options)[0].resource_record_value
+  }
+}
+
 # ECS Task Definition — worldclock app (health, version, api/time)
 resource "aws_ecs_task_definition" "worldclock" {
   family                   = "worldclock"
