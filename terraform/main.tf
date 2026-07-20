@@ -189,7 +189,7 @@ resource "aws_lb_listener" "worldclock" {
   tags = local.tags
 }
 
-# ECS Task Definition
+# ECS Task Definition — worldclock app (health, version, api/time)
 resource "aws_ecs_task_definition" "worldclock" {
   family                   = "worldclock"
   network_mode             = "awsvpc"
