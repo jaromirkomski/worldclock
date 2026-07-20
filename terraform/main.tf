@@ -23,26 +23,6 @@ locals {
   tags = {
     Project = "worldclock"
   }
-
-  # Oficjalne zakresy IP Cloudflare (https://www.cloudflare.com/ips-v4) —
-  # tylko stąd realnie przychodzi ruch przez naszą domenę.
-  cloudflare_ipv4 = [
-    "173.245.48.0/20",
-    "103.21.244.0/22",
-    "103.22.200.0/22",
-    "103.31.4.0/22",
-    "141.101.64.0/18",
-    "108.162.192.0/18",
-    "190.93.240.0/20",
-    "188.114.96.0/20",
-    "197.234.240.0/22",
-    "198.41.128.0/17",
-    "162.158.0.0/15",
-    "104.16.0.0/13",
-    "104.24.0.0/14",
-    "172.64.0.0/13",
-    "131.0.72.0/22",
-  ]
 }
 
 # ECR
@@ -125,7 +105,8 @@ resource "aws_route_table_association" "worldclock_b" {
   route_table_id = aws_route_table.worldclock.id
 }
 
-# Security Group dla ALB — wpuszcza ruch tylko z Cloudflare, nie z całego internetu
+# Security Group dla ALB — HTTP (przekierowuje do HTTPS) i HTTPS wprost z internetu,
+# TLS terminowany na ALB certyfikatem ACM, bez pośrednika
 resource "aws_security_group" "alb" {
   vpc_id = aws_vpc.worldclock.id
 
@@ -133,7 +114,14 @@ resource "aws_security_group" "alb" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = local.cloudflare_ipv4
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -195,24 +183,26 @@ resource "aws_lb_target_group" "worldclock" {
   tags = local.tags
 }
 
-# ALB Listener
+# ALB Listener — HTTP przekierowuje na HTTPS (301)
 resource "aws_lb_listener" "worldclock" {
   load_balancer_arn = aws_lb.worldclock.arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.worldclock.arn
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 
   tags = local.tags
 }
 
-# --- ETAP 1: certyfikat ACM dla ALB (bez Cloudflare jako pośrednika TLS) ---
-# Tylko żądanie certyfikatu i walidacja DNS — nic tu nie czeka i nie blokuje
-# pipeline'u. Listener 443 dojdzie w Etapie 2, po ręcznym dodaniu rekordu
-# walidacyjnego w Cloudflare (patrz output acm_validation_record poniżej).
+# Certyfikat ACM dla ALB — TLS terminowany bezpośrednio na AWS, bez Cloudflare
 resource "aws_acm_certificate" "worldclock" {
   domain_name       = "worldclock.fantastycznydompanajaromira.uk"
   validation_method = "DNS"
@@ -225,12 +215,33 @@ resource "aws_acm_certificate" "worldclock" {
 }
 
 output "acm_validation_record" {
-  description = "Dodaj ten rekord CNAME w Cloudflare, żeby zwalidować certyfikat ACM"
+  description = "Rekord CNAME dodany w Cloudflare, żeby zwalidować certyfikat ACM"
   value = {
     name  = tolist(aws_acm_certificate.worldclock.domain_validation_options)[0].resource_record_name
     type  = tolist(aws_acm_certificate.worldclock.domain_validation_options)[0].resource_record_type
     value = tolist(aws_acm_certificate.worldclock.domain_validation_options)[0].resource_record_value
   }
+}
+
+resource "aws_acm_certificate_validation" "worldclock" {
+  certificate_arn         = aws_acm_certificate.worldclock.arn
+  validation_record_fqdns = [for o in aws_acm_certificate.worldclock.domain_validation_options : o.resource_record_name]
+}
+
+# ALB Listener HTTPS — właściwy ruch, TLS terminowany tutaj
+resource "aws_lb_listener" "worldclock_https" {
+  load_balancer_arn = aws_lb.worldclock.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = aws_acm_certificate_validation.worldclock.certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.worldclock.arn
+  }
+
+  tags = local.tags
 }
 
 # ECS Task Definition — worldclock app (health, version, api/time)
