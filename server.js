@@ -15,7 +15,7 @@ const express = require('express');
   app.use(express.static('public'));
 
   app.get('/health',  (req, res) => res.json({ status: 'ok' }));
-  app.get('/version', (req, res) => res.json({ version: '1.0.0' }));
+  app.get('/version', (req, res) => res.json({ version: '2.0.0' }));
   app.get('/api/time', (req, res) => {
     const { city } = req.query;
     if (!city) return res.status(400).json({ error:
