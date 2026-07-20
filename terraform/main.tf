@@ -23,6 +23,26 @@ locals {
   tags = {
     Project = "worldclock"
   }
+
+  # Oficjalne zakresy IP Cloudflare (https://www.cloudflare.com/ips-v4) —
+  # tylko stąd realnie przychodzi ruch przez naszą domenę.
+  cloudflare_ipv4 = [
+    "173.245.48.0/20",
+    "103.21.244.0/22",
+    "103.22.200.0/22",
+    "103.31.4.0/22",
+    "141.101.64.0/18",
+    "108.162.192.0/18",
+    "190.93.240.0/20",
+    "188.114.96.0/20",
+    "197.234.240.0/22",
+    "198.41.128.0/17",
+    "162.158.0.0/15",
+    "104.16.0.0/13",
+    "104.24.0.0/14",
+    "172.64.0.0/13",
+    "131.0.72.0/22",
+  ]
 }
 
 # ECR
@@ -105,7 +125,7 @@ resource "aws_route_table_association" "worldclock_b" {
   route_table_id = aws_route_table.worldclock.id
 }
 
-# Security Group dla ALB
+# Security Group dla ALB — wpuszcza ruch tylko z Cloudflare, nie z całego internetu
 resource "aws_security_group" "alb" {
   vpc_id = aws_vpc.worldclock.id
 
@@ -113,7 +133,7 @@ resource "aws_security_group" "alb" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = local.cloudflare_ipv4
   }
 
   egress {
